@@ -1,6 +1,6 @@
 # Aplicación Spring Boot
 
-Esta es una aplicación de ejemplo desarrollada con Spring Boot que proporciona funcionalidades relacionadas con operaciones financieras. La aplicación expone una API REST que permite realizar cálculos y obtener datos relacionados con operaciones financieras.
+Esta es una aplicación desarrollada con Spring Boot que proporciona funcionalidades relacionadas con la gestión y actualización remota del firmware empleado en los dispositivos IoT desarrollados por Enrique Bernardo González Vázquez para el proyecto CUTEnergy. Es compatible con la placa ESP32 y ESP8266 
 
 ## Requisitos previos
 
