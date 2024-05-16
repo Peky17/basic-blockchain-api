@@ -1,60 +1,66 @@
 package com.monitoring.blockchain.controllers;
-
-import com.monitoring.blockchain.elements.Block;
+import com.monitoring.blockchain.models.Block;
 import com.monitoring.blockchain.services.BlockchainService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/blockchain")
 public class BlockchainController {
-    private final BlockchainService blockchainService;
 
-    public BlockchainController(BlockchainService blockchainService) {
-        this.blockchainService = blockchainService;
+    @Autowired
+    private BlockchainService blockchainService;
+
+    @GetMapping("/chain")
+    public List<Block> getChain() {
+        return blockchainService.getChain();
     }
 
-    @GetMapping("/checkIntegrity")
-    public boolean checkFirmwareIntegrity(@RequestParam("version") String version,
-                                          @RequestParam("hash") String hash) {
-        return blockchainService.checkFirmwareIntegrity(version, hash);
+    @PostMapping("/transactions/new")
+    public String newTransaction(@RequestParam String sender, @RequestParam String recipient, @RequestParam int amount) {
+        blockchainService.addTransaction(sender, recipient, amount);
+        return "Transaction added";
     }
 
-    @GetMapping("/checkIntegrityByBlockHash")
-    public boolean checkFirmwareIntegrityByBlockHash(@RequestParam("blockHash") String blockHash,
-                                                     @RequestParam("version") String version,
-                                                     @RequestParam("hash") String hash) {
-        return blockchainService.checkFirmwareIntegrityByBlockHash(blockHash, version, hash);
+    @PostMapping("/mine")
+    public Block mine() {
+        return blockchainService.mineBlock();
     }
 
-    @GetMapping("/latestBlock")
-    public Block getLatestBlock() {
-        return blockchainService.getLatestBlock();
+    @PostMapping("/nodes/register")
+    public Map<String, Object> registerNodes(@RequestBody Map<String, List<String>> nodes) {
+        List<String> nodeAddresses = nodes.get("nodes");
+        if (nodeAddresses == null) {
+            throw new IllegalArgumentException("Please supply a valid list of nodes");
+        }
+
+        for (String node : nodeAddresses) {
+            blockchainService.registerNode(node);
+        }
+
+        return Map.of(
+                "message", "New nodes have been added",
+                "total_nodes", blockchainService.getNodes()
+        );
     }
 
-    @GetMapping("/blockchainSize")
-    public int getBlockchainSize() {
-        return blockchainService.getBlockchainSize();
-    }
+    @GetMapping("/nodes/resolve")
+    public Map<String, Object> consensus() {
+        boolean replaced = blockchainService.resolveConflicts();
 
-    @GetMapping("/difficulty")
-    public int getDifficulty() {
-        return blockchainService.getDifficulty();
-    }
-
-    @GetMapping("/blockchain")
-    public List<Block> getBlockchain() {
-        return blockchainService.getBlockchain();
-    }
-
-    @GetMapping("/block/{index}")
-    public Block getBlockByIndex(@PathVariable int index) {
-        return blockchainService.getBlockByIndex(index);
-    }
-
-    @GetMapping("/block/{hash}")
-    public Block getBlockByHash(@PathVariable String hash) {
-        return blockchainService.getBlockByHash(hash);
+        if (replaced) {
+            return Map.of(
+                    "message", "Our chain was replaced",
+                    "new_chain", blockchainService.getChain()
+            );
+        } else {
+            return Map.of(
+                    "message", "Our chain is authoritative",
+                    "chain", blockchainService.getChain()
+            );
+        }
     }
 }
